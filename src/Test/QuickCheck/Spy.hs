@@ -47,12 +47,12 @@ instance (KnownNat f, Arbitrary e, Arbitrary a) => Arbitrary (DistEither f e a) 
     where
       freq = fromIntegral . natVal $ Proxy @f
 
-newtype ThrowSpy (f :: Nat) n a b e = ThrowSpy (Spy a b)
+newtype ThrowSpy (f :: Nat) n e a b = ThrowSpy (Spy a b)
 
 instance Show (ThrowSpy f n a b e) where
   show _ = "<ThrowSpy>"
 
-throwSpy :: ThrowSpy f n a b e -> UnSpy a b
+throwSpy :: forall f n a b. ThrowSpy f n (UnMockThrow n) a b -> UnSpy a b
 throwSpy (ThrowSpy s) = unSpy s
 
 class MockThrow n where
@@ -62,7 +62,7 @@ class MockThrow n where
 instance (
   e ~ UnMockThrow n, KnownNat f, CoArbitrary a, Arbitrary n, 
   Arbitrary b, MockThrow n, Exception e) => 
-    Arbitrary (ThrowSpy f n a b e) where
+    Arbitrary (ThrowSpy f n e a b) where
       arbitrary = 
         ThrowSpy . makeSpy 
           . ((throwLeft . unDistEither) .) <$> arbitrary @(a -> DistEither f n b)
