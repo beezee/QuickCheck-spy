@@ -28,8 +28,8 @@ instance Arbitrary Af where
 
 prop_failSpy :: IO ()
 prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
-  (ref, fn) <- run . throwSpy @10 @Af @Int @String $ s
-  res <- run . traverse (try @AssertionFailed . fn) $ ints
+  (ref, fn) <- run . throwSpy @10 @Af $ s
+  res <- run . traverse @_ @_ @Int @(Either AssertionFailed String) (try . fn) $ ints
   spied <- run . getSpied $ ref
   let success = mapMaybe rightToMaybe $ res
   _ <- return $ 
