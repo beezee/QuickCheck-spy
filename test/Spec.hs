@@ -26,6 +26,23 @@ instance MockThrow Af where
 instance Arbitrary Af where
   arbitrary = Af . AssertionFailed <$> arbitrary
 
+rightToMaybe :: Either e a -> Maybe a
+rightToMaybe (Right a) = Just a
+rightToMaybe (Left _) = Nothing
+
+prop_failZeroSpy :: IO ()
+prop_failZeroSpy = quickCheck $ \s ints -> monadicIO $ do
+  (ref, fn) <- run . throwSpy @0 @Af $ s
+  eres <- run . traverse @_ @_ @Int @(Either AssertionFailed String) (try . fn) $ ints
+  spied <- run . getSpied $ ref
+  let res = mapMaybe rightToMaybe $ eres
+  _ <- return $ 
+      if res == (snd <$> spied) then succeeded 
+      else failed { reason = show res <> " /= " <> (show $ snd <$> spied) }
+  return $ 
+      if ints == (fst <$> spied) then succeeded
+      else failed { reason = show ints <> " /= " <> (show $ fst <$> spied) }
+
 prop_failSpy :: IO ()
 prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
   (ref, fn) <- run . throwSpy @10 @Af $ s
@@ -40,9 +57,6 @@ prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
       if skippedInputs == [] then succeeded
       else failed { reason = "Recorded outside of given inputs " <> (show skippedInputs) }
   where
-    rightToMaybe (Right a) = Just a
-    rightToMaybe (Left _) = Nothing
-
     checkInputs [] _ = []
     checkInputs x [] = x
     checkInputs (h1:t1) (h2:t2) = 
@@ -50,4 +64,4 @@ prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
       in checkInputs rec1 rec2
 
 main :: IO ()
-main = prop_noFailSpy >> prop_failSpy
+main = prop_noFailSpy >> prop_failZeroSpy >> prop_failSpy
