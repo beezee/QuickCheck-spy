@@ -5,17 +5,26 @@ import Test.QuickCheck.Monadic
 import Test.QuickCheck.Property
 import Test.QuickCheck.Spy
 
+prop_spyDeterministic :: IO ()
+prop_spyDeterministic = quickCheck $ \s ints -> monadicIO $ do
+  (_, fn) <- run . unSpy $ s
+  res <- run . traverse @[] @_ @Int @String fn $ ints
+  res2 <- run . traverse fn $ ints 
+  return $ 
+    if res == res2 then succeeded
+    else failed { reason = show res <> " /= " <> show res2 }
+
 prop_noFailSpy :: IO ()
 prop_noFailSpy = quickCheck $ \s ints -> monadicIO $ do
   (ref, fn) <- run . unSpy $ s
   res <- run . traverse @_ @_ @Int @String fn $ ints
   spied <- run . getSpied $ ref
   _ <- return $ 
-      if res == (snd <$> spied) then succeeded 
-      else failed { reason = show res <> " /= " <> (show $ snd <$> spied) }
+    if res == (snd <$> spied) then succeeded 
+    else failed { reason = show res <> " /= " <> (show $ snd <$> spied) }
   return $ 
-      if ints == (fst <$> spied) then succeeded
-      else failed { reason = show ints <> " /= " <> (show $ fst <$> spied) }
+    if ints == (fst <$> spied) then succeeded
+    else failed { reason = show ints <> " /= " <> (show $ fst <$> spied) }
 
 newtype Af = Af AssertionFailed
 
@@ -37,11 +46,20 @@ prop_failZeroSpy = quickCheck $ \s ints -> monadicIO $ do
   spied <- run . getSpied $ ref
   let res = mapMaybe rightToMaybe $ eres
   _ <- return $ 
-      if res == (snd <$> spied) then succeeded 
-      else failed { reason = show res <> " /= " <> (show $ snd <$> spied) }
+    if res == (snd <$> spied) then succeeded 
+    else failed { reason = show res <> " /= " <> (show $ snd <$> spied) }
   return $ 
-      if ints == (fst <$> spied) then succeeded
-      else failed { reason = show ints <> " /= " <> (show $ fst <$> spied) }
+    if ints == (fst <$> spied) then succeeded
+    else failed { reason = show ints <> " /= " <> (show $ fst <$> spied) }
+
+prop_failSpyDeterministic :: IO ()
+prop_failSpyDeterministic = quickCheck $ \s ints -> monadicIO $ do
+  (_, fn) <- run . throwSpy @50 @Af $ s
+  res <- run . traverse @[] @_ @Int @(Either AssertionFailed String) (try . fn) $ ints
+  res2 <- run . traverse (try @AssertionFailed . fn) $ ints 
+  return $ 
+    if (show res) == (show res2) then succeeded
+    else failed { reason = show res <> " /= " <> show res2 }
 
 prop_failSpy :: IO ()
 prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
@@ -50,12 +68,12 @@ prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
   spied <- run . getSpied $ ref
   let success = mapMaybe rightToMaybe $ res
   _ <- return $ 
-      if success == (snd <$> spied) then succeeded 
-      else failed { reason = show success <> " /= " <> (show $ snd <$> spied) }
+    if success == (snd <$> spied) then succeeded 
+    else failed { reason = show success <> " /= " <> (show $ snd <$> spied) }
   let skippedInputs = checkInputs (fst <$> spied) ints
   return $ 
-      if skippedInputs == [] then succeeded
-      else failed { reason = "Recorded outside of given inputs " <> (show skippedInputs) }
+    if skippedInputs == [] then succeeded
+    else failed { reason = "Recorded outside of given inputs " <> (show skippedInputs) }
   where
     checkInputs [] _ = []
     checkInputs x [] = x
@@ -64,4 +82,9 @@ prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
       in checkInputs rec1 rec2
 
 main :: IO ()
-main = prop_noFailSpy >> prop_failZeroSpy >> prop_failSpy
+main = do
+  prop_spyDeterministic
+  prop_noFailSpy
+  prop_failZeroSpy
+  prop_failSpyDeterministic
+  prop_failSpy
