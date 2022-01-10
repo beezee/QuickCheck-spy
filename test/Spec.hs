@@ -5,10 +5,10 @@ import Test.QuickCheck.Monadic
 import Test.QuickCheck.Property
 import Test.QuickCheck.Spy
 
-prop_noFailSpy :: Spy Int String -> [Int] -> Property
-prop_noFailSpy s ints = monadicIO $ do
+prop_noFailSpy :: IO ()
+prop_noFailSpy = quickCheck $ \s ints -> monadicIO $ do
   (ref, fn) <- run . unSpy $ s
-  res <- run . traverse fn $ ints
+  res <- run . traverse @_ @_ @Int @String fn $ ints
   spied <- run . getSpied $ ref
   _ <- return $ 
       if res == (snd <$> spied) then succeeded 
@@ -50,5 +50,4 @@ prop_failSpy = quickCheck $ \s ints -> monadicIO $ do
       in checkInputs rec1 rec2
 
 main :: IO ()
-main = 
-  quickCheck prop_noFailSpy >> prop_failSpy
+main = prop_noFailSpy >> prop_failSpy
