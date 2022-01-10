@@ -1,0 +1,72 @@
+name:                QuickCheck-spy
+version:             0.1.0.0
+github:              "githubuser/QuickCheck-spy"
+license:             BSD3
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2022 Author name here"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/QuickCheck-spy#readme>
+
+default-extensions:
+- DataKinds
+- DerivingVia
+- FlexibleInstances
+- KindSignatures
+- MultiParamTypeClasses
+- RankNTypes
+- ScopedTypeVariables
+- TypeApplications
+- TypeFamilies
+- TypeOperators
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Werror
+  - -Wredundant-constraints
+  - -fwarn-incomplete-patterns
+  - -fwarn-incomplete-record-updates
+  - -fwarn-incomplete-uni-patterns
+  - -fwarn-missing-methods
+  - -fwarn-name-shadowing
+
+dependencies:
+- base >= 4.7 && < 5
+- QuickCheck
+
+library:
+  source-dirs: src
+
+executables:
+  QuickCheck-spy-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - QuickCheck-spy
+
+tests:
+  QuickCheck-spy-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - QuickCheck-spy

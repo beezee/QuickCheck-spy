@@ -1,0 +1,5 @@
+:set -fwarn-unused-binds -fwarn-unused-imports
+:set -isrc:main:test
+:load app/Main.hs
+:load test/Spec.hs
+
